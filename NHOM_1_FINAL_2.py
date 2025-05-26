@@ -1,5 +1,5 @@
 import os
-import xml.etree.ElementTree as ET
+#import xml.etree.ElementTree as ET
 from ultralytics import YOLO
 import pandas as pd
 import cv2
@@ -10,12 +10,13 @@ import openpyxl
 from colorama import init, Fore, Style
 from datetime import datetime
 from openpyxl.styles import Font, PatternFill, Alignment
-from openpyxl.utils import get_column_letter # Helper để chuyển đổi chỉ số cột sang chữ cái
+#from openpyxl.utils import get_column_letter # Helper để chuyển đổi chỉ số cột sang chữ cái
 init() # Khởi tạo colorama
 
 luu_anh_cat = True
 luu_anh_goc = True
 luu_anh_cham = True
+luu_anh_contours = True
 
 def chen_thong_tin_len_anh(anh, thong_tin):
     # Nội dung chữ
@@ -167,7 +168,7 @@ def cham_bai(file_mo_hinh, thu_muc_anh, file_danh_sach, file_dap_an, output_dir,
     bo_qua_anh = True
 
     # Kiểm tra mô hình
-    model_path = os.path.join(file_mo_hinh, 'train', 'weights', 'best.pt')
+    model_path = os.path.join(file_mo_hinh) # , 'train', 'weights', 'best.pt')
     if not os.path.exists(model_path):
         print(f"{Fore.RED}(!) Lỗi: Không tìm thấy mô hình tại {model_path}.")
         print(f"{Fore.YELLOW}  --> Hãy nhập mô hình vào {model_path} !{Fore.RESET}")
@@ -182,12 +183,14 @@ def cham_bai(file_mo_hinh, thu_muc_anh, file_danh_sach, file_dap_an, output_dir,
     ket_qua_dir = output_dir
     anh_goc_dir = os.path.join(ket_qua_dir, 'anh_goc_danh_dau')
     anh_cat_dir = os.path.join(ket_qua_dir, 'anh_da_cat')
+    output_contours_dir = os.path.join(ket_qua_dir, 'anh_contours')
     anh_cham_dir = os.path.join(ket_qua_dir, 'anh_da_cham')
     excel_dir = os.path.join(ket_qua_dir, 'file_excel')
     
     os.makedirs(ket_qua_dir, exist_ok=True)
     os.makedirs(anh_goc_dir, exist_ok=True)
     os.makedirs(anh_cat_dir, exist_ok=True)
+    os.makedirs(output_contours_dir, exist_ok=True)
     os.makedirs(anh_cham_dir, exist_ok=True)
     os.makedirs(excel_dir, exist_ok=True)
 
@@ -199,6 +202,7 @@ def cham_bai(file_mo_hinh, thu_muc_anh, file_danh_sach, file_dap_an, output_dir,
             duong_dan_anh_thu = os.path.join(thu_muc_anh, ten_file)
             output_goc_path = os.path.join(anh_goc_dir, ten_file)
             output_cat_path = os.path.join(anh_cat_dir, ten_file)
+            output_contours_path = os.path.join(output_contours_dir, ten_file)
             output_cham_path = os.path.join(anh_cham_dir, ten_file)
 
             # Thực hiện dự đoán
@@ -229,7 +233,7 @@ def cham_bai(file_mo_hinh, thu_muc_anh, file_danh_sach, file_dap_an, output_dir,
                     if anh_da_cat is not None:
                         bo_qua_anh = False
                         if 'anh_da_cat' in locals():
-                            anh_debug, sbd, ma_de, dap_an_chon, to_thong_tin, to_dap_an, ma_tran_dap_an, ket_qua_dap_an = nhan_dien_trac_nghiem(ten_file, anh_da_cat)
+                            anh_debug, anh_contours, sbd, ma_de, dap_an_chon, to_thong_tin, to_dap_an, ma_tran_dap_an, ket_qua_dap_an = nhan_dien_trac_nghiem(ten_file, anh_da_cat)
                             print(f"Đang chấm trên ảnh: {Fore.BLUE}{ten_file}{Fore.RESET}")
                             print(f"Số báo danh: {sbd}")
                             print(f"Mã đề: {ma_de}")
@@ -266,6 +270,10 @@ def cham_bai(file_mo_hinh, thu_muc_anh, file_danh_sach, file_dap_an, output_dir,
                         cv2.imwrite(output_cat_path, anh_da_cat)
                         print(f"{Fore.GREEN}--> Đã lưu ảnh cắt tại: {Fore.CYAN}{output_cat_path}{Fore.GREEN} với kích thước {Fore.YELLOW}{kich_thuoc_cat}{Fore.RESET}")
                     
+                    if luu_anh_contours:
+                        cv2.imwrite(output_cat_path, anh_contours)
+                        print(f"{Fore.GREEN}--> Đã lưu ảnh contours tại: {Fore.CYAN}{output_contours_path}{Fore.GREEN} với kích thước {Fore.YELLOW}{kich_thuoc_cat}{Fore.RESET}")
+                    
                     chen_thong_tin_len_anh(anh_cham, (sbd, ket_qua[0][4], ma_de, ket_qua[6], hien_thi_thoi_gian()))
                     if luu_anh_cham:
                         cv2.imwrite(output_cham_path, anh_cham)
@@ -279,15 +287,18 @@ def cham_bai(file_mo_hinh, thu_muc_anh, file_danh_sach, file_dap_an, output_dir,
                 print("-" * 50 + "\n")
                 anh_danh_dau_goc_copy = ReSize(anh_danh_dau_goc, 500)
                 anh_da_cat_copy = ReSize(anh_da_cat, 300)
+                anh_contours_copy = ReSize(anh_contours, 300)
                 anh_debug_copy = ReSize(anh_debug, 300)
                 anh_cham_copy = ReSize(anh_cham, 300)
 
                 cv2.imshow('anh danh dau goc', anh_danh_dau_goc_copy)
                 cv2.imshow('Anh cat', anh_da_cat_copy)
+                cv2.imshow('anh_contours', anh_contours_copy)
                 cv2.imshow("Nhan dien", anh_debug_copy)
                 cv2.imshow('anh ket qua cuoi cung', anh_cham_copy)
                 
                 anh_da_cat = tao_hinh_trong()
+                anh_contours = tao_hinh_trong()
                 anh_debug = tao_hinh_trong()
                 anh_cham = tao_hinh_trong()
 
@@ -351,6 +362,8 @@ def nhan_dien_trac_nghiem(ten_file, anh_da_cat: str) -> Tuple[Optional[np.ndarra
 
         # Phát hiện các bubble
         contours, _ = cv2.findContours(anh_nhi_phan, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        anh_contours = anh.copy()
+        cv2.drawContours(anh_contours, contours, -1, (0, 255, 255), 2) # Vẽ tất cả contours màu vàng
         cac_bubble = [
             (int(x), int(y))
             for contour in contours
@@ -454,7 +467,7 @@ def nhan_dien_trac_nghiem(ten_file, anh_da_cat: str) -> Tuple[Optional[np.ndarra
 
         # Vẽ kết quả lên ảnh debug
         def ve_bubble(anh: np.ndarray, ma_tran: List[List[Tuple[int, int]]], ket_qua: List[List[bool]], 
-                      mau_to: Tuple[int, int, int] = (0, 0, 255), mau_khong_to: Tuple[int, int, int] = (0, 255, 0)):
+                      mau_to: Tuple[int, int, int] = (0, 0, 255), mau_khong_to: Tuple[int, int, int] = (69, 255, 255)):
             for i, hang in enumerate(ma_tran):
                 for j, (x, y) in enumerate(hang):
                     if i < len(ket_qua) and j < len(ket_qua[i]):
@@ -500,7 +513,7 @@ def nhan_dien_trac_nghiem(ten_file, anh_da_cat: str) -> Tuple[Optional[np.ndarra
             print(f"{Fore.YELLOW}--> Hãy thử chụp lại {Fore.BLUE}{ten_file}!{Fore.RESET}")
 
         matran = [ma_tran_sbd, ma_tran_ma_de, ma_tran_dap_an]
-        return anh_debug, so_bao_danh, ma_de, dap_an, to_thong_tin, to_dap_an, ma_tran_dap_an, ket_qua_dap_an
+        return anh_debug, anh_contours, so_bao_danh, ma_de, dap_an, to_thong_tin, to_dap_an, ma_tran_dap_an, ket_qua_dap_an
 
     except Exception as e:
         print(f"Lỗi không xác định: {e}")
@@ -731,7 +744,7 @@ def tao_file_excel(so_bao_danh, ket_qua, noi_luu_file):
 
 # Thực thi
 if __name__ == "__main__":
-    file_mo_hinh = r"C:\Users\Y Bao\Downloads\Thu_muc_vao\Thu_muc_mo_hinh"
+    file_mo_hinh = r"C:\Users\Y Bao\Downloads\Thu_muc_vao\AI_nhom_1.pt"
     thu_muc_anh = r"C:\Users\Y Bao\Downloads\Thu_muc_vao\Thu_muc_anh"
     file_danh_sach = r"C:\Users\Y Bao\Downloads\Thu_muc_vao\DS_lop.xlsx"
     file_dap_an = r"C:\Users\Y Bao\Downloads\Thu_muc_vao\Dap_an.xlsx"
