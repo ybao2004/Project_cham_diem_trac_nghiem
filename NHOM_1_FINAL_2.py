@@ -10,6 +10,7 @@ import openpyxl
 from colorama import init, Fore, Style
 from datetime import datetime
 from openpyxl.styles import Font, PatternFill, Alignment
+from PIL import Image, ImageDraw, ImageFont
 #from openpyxl.utils import get_column_letter # Helper để chuyển đổi chỉ số cột sang chữ cái
 init() # Khởi tạo colorama
 
@@ -19,40 +20,46 @@ luu_anh_cham = True
 luu_anh_contours = True
 
 def chen_thong_tin_len_anh(anh, thong_tin):
+    """
+    Vẽ chữ tiếng Việt lên ảnh OpenCV sử dụng PIL/Pillow
+    Chỉnh sửa trực tiếp ảnh gốc (in-place)
+    """
+    # Chuyển từ OpenCV (BGR) sang PIL (RGB)
+    anh_rgb = cv2.cvtColor(anh, cv2.COLOR_BGR2RGB)
+    pil_image = Image.fromarray(anh_rgb)
+    draw = ImageDraw.Draw(pil_image)
+    
     # Nội dung chữ
-    chu1 = f"So bao danh: {thong_tin[0]}"
-    chu2 = f"Ho ten: {thong_tin[1]}"
-    chu3 = f"Ma de: {thong_tin[2]}"
-    chu4 = f"Diem: {thong_tin[3]}"
-    chu5 = f"{thong_tin[4]}"
-    # Cài đặt font
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    co_chu = 0.4           # kích thước font (scale)
-    do_day = 1           # độ dày nét
-    mau_chu = (0, 0, 92)  # màu
-
-    # Tính kích thước chữ
-    #(text_w, text_h), _ = cv2.getTextSize(chu1, font, co_chu, do_day)
-
-    # Tính vị trí để chữ nằm giữa ảnh
-    vi_tri1 = (20,20)
-    vi_tri2 = (20,40)
-    vi_tri3 = (20,60)
-    vi_tri4 = (20,80)
-    vi_tri5 = (220,20)
-
-    # Vẽ chữ lên ảnh
-    cv2.putText(anh, chu1, vi_tri1, font, co_chu, mau_chu, do_day, cv2.LINE_AA)
-    cv2.putText(anh, chu2, vi_tri2, font, co_chu, mau_chu, do_day, cv2.LINE_AA)
-    cv2.putText(anh, chu3, vi_tri3, font, co_chu, mau_chu, do_day, cv2.LINE_AA)
-    cv2.putText(anh, chu4, vi_tri4, font, co_chu, mau_chu, do_day, cv2.LINE_AA)
-    cv2.putText(anh, chu5, vi_tri5, font, co_chu, mau_chu, do_day, cv2.LINE_AA)
-
-    # Hiển thị (tùy chọn)
-    # cv2.imshow("Ảnh với chữ", img)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
-    # return img
+    chu1 = f"Lớp: {thong_tin[0]}"
+    chu2 = f"Họ tên: {thong_tin[1]}"
+    chu3 = f"Số báo danh: {thong_tin[2]}"
+    chu4 = f"Mã đề: {thong_tin[3]}"
+    chu5 = f"Điểm: {thong_tin[4]}"
+    chu6 = f"{thong_tin[5]}"
+    
+    try:
+        # Thử tải font tiếng Việt (có thể thay đổi đường dẫn)
+        font = ImageFont.truetype("arial.ttf", 14)  # Windows
+        # font = ImageFont.truetype("/System/Library/Fonts/Arial.ttf", 16)  # macOS
+        # font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 16)  # Linux
+    except:
+        # Nếu không tìm thấy font, sử dụng font mặc định
+        font = ImageFont.load_default()
+    
+    # Màu chữ (R, G, B)
+    mau_chu = (130, 0, 0)  # Đỏ đậm
+    
+    # Vị trí vẽ chữ
+    vi_tri = [(20, 10), (20, 25), (20, 40), (20, 55), (20, 70), (420, 10)]
+    cac_chu = [chu1, chu2, chu3, chu4, chu5, chu6]
+    
+    # Vẽ chữ
+    for i, chu in enumerate(cac_chu):
+        draw.text(vi_tri[i], chu, font=font, fill=mau_chu)
+    
+    # Chuyển về OpenCV format và ghi đè lên ảnh gốc
+    anh_cv2 = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
+    anh[:] = anh_cv2
 
 def tao_hinh_trong():
     # Tạo ảnh BGR đơn sắc
@@ -182,7 +189,7 @@ def cham_bai(file_mo_hinh, thu_muc_anh, file_danh_sach, file_dap_an, output_dir,
     # Tạo thư mục gốc và các thư mục con
     ket_qua_dir = output_dir
     anh_goc_dir = os.path.join(ket_qua_dir, 'anh_goc_danh_dau')
-    anh_cat_dir = os.path.join(ket_qua_dir, 'anh_da_cat')
+    anh_cat_dir = os.path.join(ket_qua_dir, 'anh_da_cat_va_nhan_dien')
     output_contours_dir = os.path.join(ket_qua_dir, 'anh_contours')
     anh_cham_dir = os.path.join(ket_qua_dir, 'anh_da_cham')
     excel_dir = os.path.join(ket_qua_dir, 'file_excel')
@@ -246,7 +253,12 @@ def cham_bai(file_mo_hinh, thu_muc_anh, file_danh_sach, file_dap_an, output_dir,
                     print(f"{Fore.RED}(!) CẢNH BÁO: Phát hiện {len(toa_do_all)} đối tượng, hãy kiểm tra lại hình {Fore.BLUE}'{ten_file}'{Fore.RED} hoặc nâng cấp mô hình!")
                     print(f"(!) --> BỎ QUA ẢNH NÀY !{Fore.RESET}")
                     bo_qua_anh = True
-                    
+                
+                # Lưu ảnh đã đánh dấu
+                if luu_anh_goc:
+                    cv2.imwrite(output_goc_path, anh_danh_dau_goc)
+                    print(f"{Fore.GREEN}--> Ảnh đã đánh dấu được lưu tại: {Fore.CYAN}{output_goc_path}{Fore.RESET}")
+
                 if not bo_qua_anh:
                     dap_an = Nhap_file_dap_an(file_dap_an)
                     thong_tin = Tim_thong_tin(file_danh_sach, sbd)
@@ -259,22 +271,18 @@ def cham_bai(file_mo_hinh, thu_muc_anh, file_danh_sach, file_dap_an, output_dir,
                         cv2.circle(anh_cham, i, 10, (17,255,255), 2)
                     # Tô màu đáp án theo đúng/sai
                     to_mau_dap_an(anh_cham, ma_tran_dap_an, ket_qua_dap_an, dap_an_chon, dap_an[2], to_dap_an)
+                    chen_thong_tin_len_anh(anh_cham, (ket_qua[0][3], ket_qua[0][4], sbd, ma_de, ket_qua[6], hien_thi_thoi_gian()))
 
                     print(f"Số đáp án làm đúng: {ket_qua[5]}, điểm: {ket_qua[6]}")
-                    # Lưu ảnh đã đánh dấu
-                    if luu_anh_goc:
-                        cv2.imwrite(output_goc_path, anh_danh_dau_goc)
-                        print(f"{Fore.GREEN}--> Ảnh đã đánh dấu được lưu tại: {Fore.CYAN}{output_goc_path}{Fore.RESET}")
-                        
+                     
                     if luu_anh_cat:
-                        cv2.imwrite(output_cat_path, anh_da_cat)
+                        cv2.imwrite(output_cat_path, anh_debug)
                         print(f"{Fore.GREEN}--> Đã lưu ảnh cắt tại: {Fore.CYAN}{output_cat_path}{Fore.GREEN} với kích thước {Fore.YELLOW}{kich_thuoc_cat}{Fore.RESET}")
                     
                     if luu_anh_contours:
-                        cv2.imwrite(output_cat_path, anh_contours)
+                        cv2.imwrite(output_contours_path, anh_contours)
                         print(f"{Fore.GREEN}--> Đã lưu ảnh contours tại: {Fore.CYAN}{output_contours_path}{Fore.GREEN} với kích thước {Fore.YELLOW}{kich_thuoc_cat}{Fore.RESET}")
                     
-                    chen_thong_tin_len_anh(anh_cham, (sbd, ket_qua[0][4], ma_de, ket_qua[6], hien_thi_thoi_gian()))
                     if luu_anh_cham:
                         cv2.imwrite(output_cham_path, anh_cham)
                         print(f"{Fore.GREEN}--> Đã lưu ảnh cắt chấm tại: {Fore.CYAN}{output_cham_path}{Fore.GREEN} với kích thước {Fore.YELLOW}{kich_thuoc_cat}{Fore.RESET}")
@@ -359,6 +367,7 @@ def nhan_dien_trac_nghiem(ten_file, anh_da_cat: str) -> Tuple[Optional[np.ndarra
         anh_nhi_phan = cv2.adaptiveThreshold(
             anh_xam, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 11, 3
         )
+        #cv2.imshow('c', anh_nhi_phan)
 
         # Phát hiện các bubble
         contours, _ = cv2.findContours(anh_nhi_phan, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -540,21 +549,28 @@ def Nhap_file_dap_an(file_DA):
 
 def Tim_thong_tin(file_danh_sach, SBD_can_tim):
     df_ds = pd.read_excel(file_danh_sach, header=None)
-    # lấy thông tin
-    infor_ds = df_ds.iloc[0:4,0:2]
-    if "_" not in SBD_can_tim and SBD_can_tim in df_ds.iloc[0:df_ds.last_valid_index(), 1]:
-        truong = df_ds.iloc[df_ds.iloc[0:df_ds.last_valid_index(), 0][(df_ds.iloc[0:df_ds.last_valid_index(), 0] == "TRƯỜNG")].index,1].item()
-        khoa = df_ds.iloc[df_ds.iloc[0:df_ds.last_valid_index(), 0][(df_ds.iloc[0:df_ds.last_valid_index(), 0] == "KHOA")].index,1].item()
-        nganh = df_ds.iloc[df_ds.iloc[0:df_ds.last_valid_index(), 0][(df_ds.iloc[0:df_ds.last_valid_index(), 0] == "NGÀNH")].index,1].item()
-        lop = df_ds.iloc[df_ds.iloc[0:df_ds.last_valid_index(), 0][(df_ds.iloc[0:df_ds.last_valid_index(), 0] == "LỚP")].index,1].item()
-        ten = df_ds.iloc[df_ds.iloc[0:df_ds.last_valid_index(), 1][(df_ds.iloc[0:df_ds.last_valid_index(), 1] == SBD_can_tim)].index,0].item()
-    else:
-        truong = "None"
-        khoa = "None"
-        nganh = "None"
-        lop = "None"
-        ten = "None"
 
+    # Lấy thông tin đầu
+    infor_ds = df_ds.iloc[0:4, 0:2]
+
+    # Xác định vùng dữ liệu từ dòng 7 đến dòng cuối có dữ liệu ở cột 1
+    last_valid = df_ds[1].last_valid_index()
+    ds_sbd = df_ds.loc[7:last_valid, 1]  # dùng .loc để an toàn với index thật
+    #print(ds_sbd)
+
+    if "_" not in SBD_can_tim and SBD_can_tim in ds_sbd.values:
+        truong = df_ds.loc[df_ds[0] == "TRƯỜNG", 1].values[0]
+        khoa = df_ds.loc[df_ds[0] == "KHOA", 1].values[0]
+        nganh = df_ds.loc[df_ds[0] == "NGÀNH", 1].values[0]
+        lop = df_ds.loc[df_ds[0] == "LỚP", 1].values[0]
+        
+        # Tìm tên ứng với SBD cần tìm
+        dong_ten = df_ds[df_ds[1] == SBD_can_tim].index[0]
+        ten = df_ds.loc[dong_ten, 0]
+    else:
+        truong = khoa = nganh = lop = ten = "None"
+
+    #print(lop)
     danh_sach = [truong, khoa, nganh, lop, ten]
     print("Nhập thông tin xong!")
     return danh_sach
@@ -744,7 +760,7 @@ def tao_file_excel(so_bao_danh, ket_qua, noi_luu_file):
 
 # Thực thi
 if __name__ == "__main__":
-    file_mo_hinh = r"C:\Users\Y Bao\Downloads\Thu_muc_vao\AI_nhom_1.pt"
+    file_mo_hinh = r"C:\Users\Y Bao\Downloads\Thu_muc_vao\AI_NHOM_1_ver4.pt"
     thu_muc_anh = r"C:\Users\Y Bao\Downloads\Thu_muc_vao\Thu_muc_anh"
     file_danh_sach = r"C:\Users\Y Bao\Downloads\Thu_muc_vao\DS_lop.xlsx"
     file_dap_an = r"C:\Users\Y Bao\Downloads\Thu_muc_vao\Dap_an.xlsx"
