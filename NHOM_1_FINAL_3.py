@@ -502,7 +502,7 @@ def process_single_image(image_path, model_path, class_list_path, answer_key_pat
             is_duplicate = False
             for existing in filtered_boxes:
                 ex, ey = existing["center"]
-                if abs(cx - ex) <= 50 and abs(cy - ey) <= 50:
+                if abs(cx - ex) <= 20 and abs(cy - ey) <= 20:
                     # Nếu gần nhau, giữ box có score cao hơn
                     if current["score"] > existing["score"]:
                         filtered_boxes.remove(existing)
