@@ -473,17 +473,56 @@ def process_single_image(image_path, model_path, class_list_path, answer_key_pat
         results = model.predict(image_path, save=False, verbose=False)
         result = results[0]
 
-        boxes = result.boxes.xyxy
+        boxes = result.boxes
         toa_do_all = []
+
+        base_name = os.path.basename(image_path)
         print(f"Đã xử lý ảnh: '{Fore.BLUE}{base_name}{Fore.RESET}' - Đã phát hiện {Fore.YELLOW}{len(boxes)}{Fore.RESET} đối tượng:")
         gui_app.log_terminal(f"Đang xử lý '{base_name}': {len(boxes)} đối tượng.")
-        
+
+        # Lưu thông tin từng box
+        box_data = []
         for box in boxes:
-            xmin, ymin, xmax, ymax = [int(coord) for coord in box.tolist()]
+            xmin, ymin, xmax, ymax = [int(coord) for coord in box.xyxy.tolist()[0]]
             center_x = round((xmin + xmax) / 2)
             center_y = round((ymin + ymax) / 2)
-            toa_do_all.append((center_x, center_y))
-            print(f"  - Tâm: ({center_x}, {center_y})")
+            score = float(box.conf[0])  # độ tự tin
+            cls = int(box.cls[0])       # class
+            box_data.append({
+                "box": (xmin, ymin, xmax, ymax),
+                "center": (center_x, center_y),
+                "score": score,
+                "cls": cls
+            })
+
+        # Lọc các box gần nhau, giữ lại box có score cao hơn
+        filtered_boxes = []
+        for current in box_data:
+            cx, cy = current["center"]
+            is_duplicate = False
+            for existing in filtered_boxes:
+                ex, ey = existing["center"]
+                if abs(cx - ex) <= 50 and abs(cy - ey) <= 50:
+                    # Nếu gần nhau, giữ box có score cao hơn
+                    if current["score"] > existing["score"]:
+                        filtered_boxes.remove(existing)
+                        filtered_boxes.append(current)
+                    is_duplicate = True
+                    break
+            if not is_duplicate:
+                filtered_boxes.append(current)
+
+        # In kết quả cuối cùng
+        toa_do_all = [box["center"] for box in filtered_boxes]
+        for box in filtered_boxes:
+            print(f"  Box: {box['box']}, Class: {box['cls']}, Score: {round(box['score'], 2)}, Tâm: {box['center']}")
+
+        # Cảnh báo nếu số lượng không đúng 4
+        if len(toa_do_all) != 4:
+            print(f"{Fore.RED}(!) CẢNH BÁO: Phát hiện {len(toa_do_all)} đối tượng sau lọc! Kiểm tra lại hình '{base_name}' hoặc nâng cấp mô hình!{Fore.RESET}")
+            print(f"{Fore.YELLOW}(!) --> BỎ QUA ẢNH NÀY !{Fore.RESET}")
+        else:
+            print(f"{Fore.GREEN}--> Ảnh hợp lệ, phát hiện đủ 4 điểm!{Fore.RESET}")
 
         # Đọc ảnh gốc và vẽ
         anh_goc = cv2.imread(image_path)
@@ -492,7 +531,7 @@ def process_single_image(image_path, model_path, class_list_path, answer_key_pat
 
         # Lưu ảnh gốc đã đánh dấu (theo logic gốc)
         if luu_anh_goc:
-            output_goc_path = os.path.join(anh_goc_dir, f'ANH_GOC - {base_name}')
+            output_goc_path = os.path.join(anh_goc_dir, base_name)
             cv2.imwrite(output_goc_path, anh_danh_dau_goc)
             print(f"{Fore.GREEN}--> Ảnh gốc đã đánh dấu được lưu tại: {Fore.CYAN}{output_goc_path}")
 
@@ -546,15 +585,15 @@ def process_single_image(image_path, model_path, class_list_path, answer_key_pat
                 
                 # 8. Lưu các ảnh trung gian (theo logic gốc)
                 if luu_anh_cat and anh_debug is not None:
-                    path = os.path.join(anh_cat_dir, f'ANH_CAT - {sbd} - {base_name}')
+                    path = os.path.join(anh_cat_dir, f'{sbd}_{base_name}')
                     cv2.imwrite(path, anh_debug)
                     print(f"{Fore.GREEN}--> Đã lưu ảnh nhận diện tại: {Fore.CYAN}{path}")
                 if luu_anh_nhi_phan and anh_nhi_phan is not None:
-                    path = os.path.join(output_anh_nhi_phan_dir, f'NHI_PHAN - {sbd} - {base_name}')
+                    path = os.path.join(output_anh_nhi_phan_dir, f'{sbd}_{base_name}')
                     cv2.imwrite(path, anh_nhi_phan)
                     print(f"{Fore.GREEN}--> Đã lưu ảnh nhị phân tại: {Fore.CYAN}{path}")
                 if luu_anh_cham and anh_cham is not None:
-                    path = os.path.join(anh_cham_dir, f'ANH_CHAM - {sbd} - {base_name}')
+                    path = os.path.join(anh_cham_dir, f'{sbd}_{base_name}')
                     cv2.imwrite(path, anh_cham)
                     print(f"{Fore.GREEN}--> Đã lưu ảnh đã chấm tại: {Fore.CYAN}{path}")
             else:
