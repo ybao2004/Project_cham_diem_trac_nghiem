@@ -1,0 +1,59 @@
+Các Lệnh Cài đặt và Chạy LabelImg (Từ Mã Nguồn)
+Đảm bảo bạn đã cài đặt Python và pip trên máy tính của mình. Link: python.org
+
+1. Cài đặt Git (Nếu chưa có):
+- Tải Git cho Windows từ: https://git-scm.com/download/win
+- Chạy file cài đặt và ĐẢM BẢO chọn tùy chọn "Add Git to PATH" hoặc "Git from the command line...".
+- Đóng và mở lại Command Prompt/Terminal sau khi cài đặt.
+- Kiểm tra: git --version
+
+2. Tải Mã nguồn LabelImg:
+- Mở Command Prompt/Terminal, chạy lệnh:
+	git clone https://github.com/tzutalin/labelImg.git
+
+3. Di chuyển vào Thư mục Mã nguồn, chạy lệnh: Bash
+	cd labelImg
+---
+(Đảm bảo bạn đang ở trong thư mục labelImg cho các lệnh tiếp theo)
+---
+
+4. Cài đặt Thư viện Python Cần thiết, chạy lệnh:
+	pip install pyqt5 lxml
+---
+# Nếu gặp lỗi với pyqt5, thử thay bằng pyqt:
+# pip install pyqt lxml
+---
+
+5. Biên dịch File Tài nguyên Giao diện:
+- Nếu dùng PyQt5 (thường là thế):
+	pyrcc5 -o libs/resources.py resources.qrc
+
+- Nếu dùng PyQt4:
+	pyrcc4 -o libs/resources.py resources.qrc
+
+---
+(Lệnh này thường không báo gì khi thành công)
+---
+
+6. Chạy LabelImg:
+Chạy lệnh:
+	python labelImg.py
+---
+
+Lưu ý quan trọng:
+Trước khi bắt đầu gán nhãn, hãy tạo một file classes.txt trong thư mục gốc của LabelImg (ngang hàng với labelImg.py) và liệt kê mỗi nhãn bạn cần trên một dòng mới (ví dụ: ma_de, sbd, khu_vuc_cau_hoi).
+Khi sử dụng LabelImg, nhớ chọn "Open Dir" cho thư mục ảnh và "Change Save Dir" cho thư mục lưu file annotation (.xml hoặc .txt).
+
+
+-----------------------------------
+Cài nhanh: (dán từng dòng)
+
+- Tải: https://git-scm.com/download/win
+- Mở command Prompt, dán từng lệnh:
+ 
+git --version
+git clone https://github.com/tzutalin/labelImg.git
+cd labelImg
+pip install pyqt5 lxml
+pyrcc5 -o libs/resources.py resources.qrc
+python labelImg.py
