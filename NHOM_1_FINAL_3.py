@@ -22,7 +22,7 @@ luu_anh_cat = True
 luu_anh_goc = True
 luu_anh_cham = True
 luu_anh_contours = True
-luu_anh_nhi_phan = True
+luu_anh_nhi_phan = False
 
 def chen_thong_tin_len_anh(anh, thong_tin):
     """
@@ -492,7 +492,7 @@ def process_single_image(image_path, model_path, class_list_path, answer_key_pat
 
         # Lưu ảnh gốc đã đánh dấu (theo logic gốc)
         if luu_anh_goc:
-            output_goc_path = os.path.join(anh_goc_dir, base_name)
+            output_goc_path = os.path.join(anh_goc_dir, f'ANH_GOC - {base_name}')
             cv2.imwrite(output_goc_path, anh_danh_dau_goc)
             print(f"{Fore.GREEN}--> Ảnh gốc đã đánh dấu được lưu tại: {Fore.CYAN}{output_goc_path}")
 
@@ -546,15 +546,15 @@ def process_single_image(image_path, model_path, class_list_path, answer_key_pat
                 
                 # 8. Lưu các ảnh trung gian (theo logic gốc)
                 if luu_anh_cat and anh_debug is not None:
-                    path = os.path.join(anh_cat_dir, f'{sbd}_{base_name}')
+                    path = os.path.join(anh_cat_dir, f'ANH_CAT - {sbd} - {base_name}')
                     cv2.imwrite(path, anh_debug)
                     print(f"{Fore.GREEN}--> Đã lưu ảnh nhận diện tại: {Fore.CYAN}{path}")
                 if luu_anh_nhi_phan and anh_nhi_phan is not None:
-                    path = os.path.join(output_anh_nhi_phan_dir, f'{sbd}_{base_name}')
+                    path = os.path.join(output_anh_nhi_phan_dir, f'NHI_PHAN - {sbd} - {base_name}')
                     cv2.imwrite(path, anh_nhi_phan)
                     print(f"{Fore.GREEN}--> Đã lưu ảnh nhị phân tại: {Fore.CYAN}{path}")
                 if luu_anh_cham and anh_cham is not None:
-                    path = os.path.join(anh_cham_dir, f'{sbd}_{base_name}')
+                    path = os.path.join(anh_cham_dir, f'ANH_CHAM - {sbd} - {base_name}')
                     cv2.imwrite(path, anh_cham)
                     print(f"{Fore.GREEN}--> Đã lưu ảnh đã chấm tại: {Fore.CYAN}{path}")
             else:
