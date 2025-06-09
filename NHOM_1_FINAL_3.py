@@ -46,7 +46,7 @@ def chen_thong_tin_len_anh(anh, thong_tin):
         font = ImageFont.load_default()
     
     mau_chu = (130, 0, 0)  # Đỏ đậm
-    vi_tri = [(20, 10), (20, 25), (20, 40), (20, 55), (20, 70), (420, 10)]
+    vi_tri = [(20, 5), (20, 25), (20, 45), (20, 65), (20, 85), (420, 5)]
     cac_chu = [chu1, chu2, chu3, chu4, chu5, chu6]
     
     for i, chu in enumerate(cac_chu):
@@ -454,7 +454,6 @@ def process_single_image(image_path, model_path, class_list_path, answer_key_pat
 
     # Tạo các ảnh trống để hiển thị nếu có lỗi
     img_placeholder = tao_hinh_trong()
-    
     try:
         
         # 1. Tạo thư mục kết quả (nếu chưa có)
@@ -504,7 +503,7 @@ def process_single_image(image_path, model_path, class_list_path, answer_key_pat
             anh_da_cat = cat_anh_co_dinh(anh_goc.copy(), toa_do_all, kich_thuoc_cat)
         else:
             print(f"{Fore.RED}(!) CẢNH BÁO: Phát hiện {len(toa_do_all)}/4 đối tượng. Bỏ qua xử lý ảnh này.")
-            gui_app.log_terminal(f"CẢNH BÁO: Phát hiện {len(toa_do_all)}/4 góc. Bỏ qua ảnh.")
+            gui_app.log_terminal(f"(!) CẢNH BÁO: Phát hiện {len(toa_do_all)}/4 góc. Bỏ qua ảnh.")
             bo_qua_anh = True
 
         # 4. Nếu không bỏ qua, tiếp tục xử lý
@@ -547,15 +546,15 @@ def process_single_image(image_path, model_path, class_list_path, answer_key_pat
                 
                 # 8. Lưu các ảnh trung gian (theo logic gốc)
                 if luu_anh_cat and anh_debug is not None:
-                    path = os.path.join(anh_cat_dir, base_name)
+                    path = os.path.join(anh_cat_dir, f'{sbd}_{base_name}')
                     cv2.imwrite(path, anh_debug)
                     print(f"{Fore.GREEN}--> Đã lưu ảnh nhận diện tại: {Fore.CYAN}{path}")
                 if luu_anh_nhi_phan and anh_nhi_phan is not None:
-                    path = os.path.join(output_anh_nhi_phan_dir, base_name)
+                    path = os.path.join(output_anh_nhi_phan_dir, f'{sbd}_{base_name}')
                     cv2.imwrite(path, anh_nhi_phan)
                     print(f"{Fore.GREEN}--> Đã lưu ảnh nhị phân tại: {Fore.CYAN}{path}")
                 if luu_anh_cham and anh_cham is not None:
-                    path = os.path.join(anh_cham_dir, base_name)
+                    path = os.path.join(anh_cham_dir, f'{sbd}_{base_name}')
                     cv2.imwrite(path, anh_cham)
                     print(f"{Fore.GREEN}--> Đã lưu ảnh đã chấm tại: {Fore.CYAN}{path}")
             else:
@@ -788,7 +787,7 @@ class AppController:
             'on_auto_stopped': self.stop_auto_processing
         }
         self.gui.set_callbacks(callbacks)
-        self.gui.log_terminal("Chào mừng! Vui lòng nhập các file cần thiết.")
+        #self.gui.log_terminal("Chào mừng! Vui lòng nhập các file cần thiết.")
         
     def _validate_inputs(self):
         """Kiểm tra xem tất cả các file cần thiết đã được nhập chưa"""
@@ -901,7 +900,7 @@ class AppController:
                 output_dir=self.output_dir, gui_app=self.gui
             )
             self.current_image_index += 1
-            time.sleep(0.5) # Thêm một khoảng dừng nhỏ giữa các ảnh
+            #time.sleep(0.5) # Thêm một khoảng dừng nhỏ giữa các ảnh
         
         # Sau khi vòng lặp kết thúc
         def on_complete():
