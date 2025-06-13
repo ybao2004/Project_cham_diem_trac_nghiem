@@ -110,7 +110,7 @@ def huan_luyen_mo_hinh(output_dir):
         data=os.path.join(output_dir, 'data.yaml'),
         epochs=100,
         patience=50,
-        batch=-1, # tự độngđộng
+        batch=-1, # tự động
         device=0, # Sử dụng GPU - cần tải thư viện cho GPU. (Pytorch 12.1)
         imgsz=640,
         project=output_dir,
